@@ -1,0 +1,27 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Obsidian vault configuration
+.obsidian/
+
+# Temporary files
+*.tmp
+*.bak
+
+raw/*
+
+# 忽略所有 Obsidian 設定檔
+.obsidian/*
+# 排除核心設定檔（如果你想同步外觀、套件清單與快捷鍵）
+!.obsidian/app.json
+!.obsidian/appearance.json
+!.obsidian/community-plugins.json
+!.obsidian/hotkeys.json
+
