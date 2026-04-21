@@ -4,6 +4,7 @@ This page provides an index of the core modules within the QCAP SDK.
 
 ## Core Modules
 - [[Modules/Base]] - Base utilities and common definitions.
+- [[Modules/RefCountedBuffer]] - Reference counting and buffer management.
 - [[Modules/JSBase]] - Base library for common operations.
 - [[Modules/ZZMF]] - Multimedia framework components.
 - [[Modules/QCap2]] - Implementation of the modern OO API.
