@@ -3,6 +3,7 @@
 This page provides an index of the core modules within the QCAP SDK.
 
 ## Core Modules
+- [[Modules/ZzDemuxer]] - Unified A/V demuxing interface with multiple backends.
 - [[Modules/Base]] - Base utilities and common definitions.
 - [[Modules/RefCountedBuffer]] - Reference counting and buffer management.
 - [[Modules/JSBase]] - Base library for common operations.

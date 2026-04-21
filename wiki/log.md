@@ -1,4 +1,5 @@
 # Log
+## [2026-04-21] analysis | ZzDemuxer and its backends summarized and added to wiki
 ## [2026-04-20] analysis | Initial Wiki Setup
 ## [2026-04-20] analysis | Wiki Structure and Module Summaries Completed
 ## [2026-04-20] analysis | Added detailed RefCountedBuffer documentation
