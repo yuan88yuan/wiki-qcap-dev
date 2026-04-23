@@ -1,36 +1,43 @@
----
-tags: [demuxer, base, av-processing]
-last_reviewed: 2026-04-21
-related_files:
-  - raw/qcap-dev/qcap/src/base/ZzDemuxer.h
-  - raw/qcap-dev/qcap/src/base/ZzDemuxer.cpp
----
 # ZzDemuxer
 
-`ZzDemuxer` provides a unified interface for demuxing audio and video streams from various sources. It delegates the actual demuxing logic to a specialized `Backend` implementation.
+`ZzDemuxer` is the core component responsible for separating multimedia streams into individual elementary streams (video and audio).
 
-## Purpose
-It abstracts the complexity of different input sources (files, network streams, hardware devices) and presents a consistent set of APIs to the rest of the system for retrieving program and stream information.
+## Architecture
+The `ZzDemuxer` employs a **Backend Pattern**. It serves as a high-level coordinator that manages configuration and output streams, while delegating the actual demuxing logic to a specialized `Backend` implementation.
 
-## Key Functionality
-- **Lifecycle Management**: Controls the demuxing process through `Start()`, `Stop()`, `Play()`, and `Update()`.
-- **Source Discovery**: Retrieves the number and details of available video sources, audio sources, video encoders, and audio encoders.
-- **Program Management**: Manages `ZzProgramInfo` to group related streams into programs.
-- **Data Flow**: Provides a `Push()` method for push-sources and manages internal buffering through backends.
+### Core Responsibilities
+- **Stream Management**: Identifies and manages multiple video and audio streams, as well as program information (`ZzProgramInfo`).
+- **Input Flexibility**: Supports two modes of operation:
+    - **URL Mode**: Fetches data from a specified URL.
+    - **Push Mode**: Receives data pushed into the demuxer via `Push(ZzRefCountedBuffer*)`.
+- **Synchronization**: Coordinates the timing of output streams to ensure audio-video synchronization.
+- **Event Notification**: Uses `ZzEvent2` to notify consumers when new packets are available.
 
 ## Backends
-`ZzDemuxer` supports multiple backends via the `CreateBackend()` method:
+The demuxer's behavior changes based on the selected `qcap2_demuxer_type_t`.
 
-- **`default`**: General purpose backend using FFmpeg for URL or push-source demuxing. Supports H.264, H.265, AV1, AAC, and MP2.
-- **`pylon`**: Integration with Pylon cameras via the Pylon C API.
-- **`usbcam`**: Manages USB cameras and audio devices using `udev`, V4L2, and ALSA.
-- **`fifo`**: Optimized FFmpeg-based backend for FIFO-like input.
-- **`rtp`**: Handles RTP streams by parsing SDP lines.
-- **`jsrtsp`**: Specialized RTSP implementation using the `JSRTSP` library.
-- **`vitis`**: Hardware-specific backend for Vitis platforms, managing HDMI RX and hardware broadcasters.
-- **`nvt_hdal`**: Hardware-specific backend for NVT HDAL platforms with input format polling.
-- **`sc6f0`**: Hardware-specific backend for SC6F0 platforms, leveraging V4L2 media topologies for HDMI/SDI.
-- **`experimental`**: Stub backend for testing and development.
+### Default Backend (`CreateBackend_default`)
+The default backend is a powerful, general-purpose implementation based on **FFmpeg**.
 
-## Implementation Details
-The core logic is defined in `raw/qcap-dev/qcap/src/base/ZzDemuxer.h` and implemented in `raw/qcap-dev/qcap/src/base/ZzDemuxer.cpp`. Each backend is implemented in its own corresponding file (e.g., `ZzDemuxer_default.cpp`, `ZzDemuxer_vitis.cpp`).
+- **Async Engine**: Utilizes `boost::asio` with a thread pool and strands to perform asynchronous I/O and packet processing.
+- **FFmpeg Integration**: Uses `AVFormatContext` for demuxing and `AVPacket` for data handling.
+- **Bitstream Filtering**: Employs `AVBSFContext` to ensure the output format is compatible with downstream components (e.g., converting MP4 fragments to Annex B for H.264/H.265).
+- **Timing & Sync**:
+    - **Stream Groups**: Groups related streams and designates a master stream to establish a common time base.
+    - **Jitter Buffering**: Implements an internal `AVPacketQueue` to smooth out arrival times.
+- **Output**: Buffers packets into `ZzRefCountedBuffer` objects and pushes them into `ZzRefCountedBufferQueue`s.
+
+### Specialized Backends
+The SDK provides several other backends for specific hardware or protocols:
+- **`pylon` / `usbcam`**: Specialized for industrial and USB cameras.
+- **`rtp` / `jsrtsp`**: Optimized for Real-time Transport Protocol and RTSP streams.
+- **`fifo`**: Uses named pipes for inter-process communication.
+- **`vitis` / `nvt_hdal` / `sc6f0`**: Platform-specific implementations for hardware acceleration.
+- **`yuancap`**: Specialized implementation for Yuan capture cards.
+
+## Data Flow
+1. **Input**: Data enters via `strURL` or `Push()`.
+2. **Backend Processing**: The `Backend` parses the container and extracts packets.
+3. **Filtering**: Packets are passed through Bitstream Filters if necessary.
+4. **Queueing**: Packets are wrapped in `ZzRefCountedBuffer` and placed in stream-specific `ZzRefCountedBufferQueue`s.
+5. **Consumption**: Downstream components (like decoders) `Pop()` the buffers from these queues.
